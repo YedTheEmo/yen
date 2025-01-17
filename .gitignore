@@ -1,6 +1,9 @@
 # Configurations
 config.json
 
+# Data Exports
+data_exports/
+
 # Byte-compiled files
 *.py[cod]
 __pycache__/

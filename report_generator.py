@@ -22,7 +22,9 @@ def fetch_data(ticker, start_date, end_date, intervals):
         data[interval] = yf.download(ticker, start=start_date, end=end_date, interval=interval)
     return data
 
+
 def generate_prompt(interval, data):
+    """"Generate a prompt to be fed to an external AI transformer model for inference."""
     prompt = (
         f"You are a Volume Price Analysis expert. Analyze the following {interval} interval data for anomalies, confirmations, and volume-price relationships.\n"
         "Look for patterns such as volume spikes, price reversals, support/resistance levels, bear/bull traps, accumulation, distribution, stopping volume, "
@@ -33,7 +35,9 @@ def generate_prompt(interval, data):
     )
     return prompt
 
+
 def generate_summary_prompt(intervals):
+    """Genarate the summary prompt, which is the last prompt."""
     prompt = (
         "You are a Volume Price Analysis expert. Based on the analyses of the following intervals, provide a consolidated summary:\n\n"
         f"Intervals analyzed: {', '.join(intervals)}\n\n"
