@@ -5,10 +5,6 @@ import tiktoken
 import json
 import os
 
-# Load OpenAI API key from config file (no longer needed for this version)
-with open("config.json", "r") as f:
-    config = json.load(f)
-
 def fetch_data(ticker, start_date, end_date, intervals):
     data = {}
     for interval in intervals:
