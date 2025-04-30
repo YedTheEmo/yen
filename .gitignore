@@ -58,3 +58,12 @@ ehthumbs.db
 *.bak
 *.swp
 
+
+# Script-Specific files
+*.txt
+*.csv
+*.json
+*.png
+*.html
+
+json
