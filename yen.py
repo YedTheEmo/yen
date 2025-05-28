@@ -17,7 +17,7 @@ import shutil
 
 class YenWorkflowManager:
     def __init__(self):
-        self.script_dir = Path(__file__).parent / "yen"
+        self.script_dir = Path(__file__).parent / "core"
         self.temp_files = []
         
     def run_script(self, script_name, args):
@@ -40,7 +40,12 @@ class YenWorkflowManager:
         if not matches:
             raise FileNotFoundError(f"No exported CSV found matching pattern: {pattern}")
         return matches[0]
-    
+
+    def find_latest_report(self, output_dir):
+        pattern = Path(output_dir) / "report_*.json"
+        reports = sorted(glob.glob(str(pattern)))
+        return reports[-1] if reports else None
+
     def cleanup(self):
         """Clean up temporary files"""
         for temp_file in self.temp_files:
@@ -261,6 +266,55 @@ class YenWorkflowManager:
             print(f"❌ Batch Analysis failed: {e}")
             raise
 
+
+    # =============================
+    # WORKFLOW 7: KABU Snapshot Diff
+    # =============================
+    def kabu_analysis(self,
+                       ticker_file=None,
+                       compare=None,
+                       snapshot_only=False,
+                       output_dir=None,
+                       snapshot_dir=None,
+                       visualize_png=False,
+                       visualize_html=False,
+                       png_output="kabu_visualization.png",
+                       html_output="kabu_report.html"):
+        """
+        Run KABU snapshot comparison and optional visualization.
+        """
+        print("🔄 Starting KABU snapshot analysis...")
+        args = []
+        if ticker_file:
+            args.extend(["--tickers", ticker_file])
+        if compare:
+            args.extend(["--compare", compare])
+        if snapshot_only:
+            args.append("--snapshot-only")
+        out_dir = output_dir or snapshot_dir or "kabu_snapshots"
+        args.extend(["--output-dir", out_dir])
+        # Run KABU
+        try:
+            self.run_script("kabu.py", args)
+            print("✅ KABU execution complete")
+            if not snapshot_only:
+                report_path = self.find_latest_report(out_dir)
+                if report_path:
+                    print(f"🔍 Found report: {report_path}")
+                    if visualize_png:
+                        print("📈 Generating PNG visualization...")
+                        self.run_script("kabu_visualizer.py", ["--report", report_path, "--output", png_output])
+                    if visualize_html:
+                        print("🌐 Generating HTML report...")
+                        self.run_script("kabu_visualizer_html.py", ["--report", report_path, "--output", html_output])
+                else:
+                    print("⚠️  No report found for visualization.")
+            return
+        except Exception as e:
+            print(f"❌ KABU analysis failed: {e}")
+            raise
+        finally:
+            self.cleanup()
     # ============================
     # UTILITY: Data Conversion
     # ============================
@@ -292,6 +346,7 @@ Available Workflows:
   stock-screening   Screen stocks by institutional ownership/volatility/volume
   batch-analysis    Process multiple tickers through any workflow
   convert-data      Convert space-separated TXT to CSV
+  kabu-analysis     Daily Stock Watchlist Roundup
 
 Examples:
   python yen.py vsa-analysis AAPL 2024-01-01 2024-12-31 --plot
@@ -354,6 +409,19 @@ Examples:
     batch_parser.add_argument('--threshold', type=float, default=1.0, help='Analysis threshold')
     batch_parser.add_argument('--plot', action='store_true', help='Generate plots (VSA only)')
     
+    # KABU Snapshot Diff workflow with Visualization options
+    kabu_parser = subparsers.add_parser('kabu-analysis', help='Compare and visualize KABU snapshot differences')
+    kabu_parser.add_argument('--tickers', dest='ticker_file', help='Ticker list file (default: filtered_stocks.txt)')
+    kabu_parser.add_argument('--compare', dest='compare', help='Path to previous snapshot JSON')
+    kabu_parser.add_argument('--snapshot-only', dest='snapshot_only', action='store_true', help='Only create a snapshot')
+    kabu_parser.add_argument('--output-dir', dest='output_dir', help='Output directory for snapshots/reports')
+    kabu_parser.add_argument('--snapshot-dir', dest='snapshot_dir', help='Directory to store/load snapshots')
+    kabu_parser.add_argument('--visualize-png', dest='visualize_png', action='store_true', help='Generate PNG visualization')
+    kabu_parser.add_argument('--visualize-html', dest='visualize_html', action='store_true', help='Generate HTML report')
+    kabu_parser.add_argument('--png-output', dest='png_output', default='kabu_visualization.png', help='PNG output filename')
+    kabu_parser.add_argument('--html-output', dest='html_output', default='kabu_report.html', help='HTML output filename')
+
+
     # Data Conversion utility
     convert_parser = subparsers.add_parser('convert-data', help='Convert TXT to CSV')
     convert_parser.add_argument('input_file', help='Input TXT file')
@@ -403,6 +471,18 @@ Examples:
             manager.batch_analysis(
                 args.ticker_file, args.start_date, args.end_date,
                 workflow=args.workflow_type, **kwargs
+            )
+        elif args.workflow == 'kabu-analysis':
+            manager.kabu_analysis(
+                ticker_file=args.ticker_file,
+                compare=args.compare,
+                snapshot_only=args.snapshot_only,
+                output_dir=args.output_dir,
+                snapshot_dir=args.snapshot_dir,
+                visualize_png=args.visualize_png,
+                visualize_html=args.visualize_html,
+                png_output=args.png_output,
+                html_output=args.html_output
             )
         elif args.workflow == 'convert-data':
             manager.convert_data(args.input_file, args.output_file)

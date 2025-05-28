@@ -24,7 +24,7 @@ A comprehensive Python-based stock analysis suite that combines Volume Spread An
 ```
 yen/
 ├── yen.py                     # Main workflow manager
-├── yen/                       # Core analysis scripts
+├── core/                       # Core analysis scripts
 │   ├── data_exporter.py       # OHLCV data fetching from Yahoo Finance
 │   ├── clean_csv_data.py      # CSV data cleaning and preprocessing
 │   ├── vsa.py                 # Volume Spread Analysis engine
@@ -33,8 +33,7 @@ yen/
 │   ├── stock_scanner.py       # Stock screening by fundamental criteria
 │   ├── prompt_generator.py    # VPA analysis prompt generation
 │   ├── prompt_generator_v2.py # Multi-ticker prompt generation
-│   └── txt_to_csv.py         # Data format conversion utility
-├── kabu/                      # Daily market roundup tools
+│   ├── txt_to_csv.py         # Data format conversion utility
 │   ├── kabu.py               # Daily price/volume movement tracker
 │   ├── kabu_visualizer.py    # PNG visualization generator
 │   └── kabu_visualizer_html.py # HTML report generator
