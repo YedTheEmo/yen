@@ -337,7 +337,7 @@ Examples:
     
     # Stock Screening workflow
     screen_parser = subparsers.add_parser('stock-screening', help='Screen stocks by criteria')
-    screen_parser.add_argument('min_institutional', type=float, help='Min institutional ownership %')
+    screen_parser.add_argument('min_institutional', type=float, help='Min institutional ownership %%')
     screen_parser.add_argument('min_volatility', type=float, help='Min annualized volatility')
     screen_parser.add_argument('min_volume', type=int, help='Min average daily volume')
     screen_parser.add_argument('--ticker-file', help='File with ticker symbols')
