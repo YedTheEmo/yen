@@ -1,74 +1,209 @@
-# YEN | VPA Prompt and Report Generator
+# YEN | Unified Stock Analysis Workflow Manager
 
-A tool for fetching Volume Price Analysis (VPA) data, generating prompts for analysis, and producing reports with the help of OpenAI’s GPT models. It allows you to analyze stock data over different time intervals (1-hour, 1-day, 1-week) and generate reports that are formatted in Markdown and HTML.
+A comprehensive Python-based stock analysis suite that combines Volume Spread Analysis (VSA), volume anomaly detection, AI-powered reporting, and stock screening into unified workflows. YEN eliminates the complexity of managing individual analysis scripts by providing predefined workflows that chain together multiple analysis tools.
 
 ## Features
-- **Prompt Generator**: Fetches stock data from Yahoo Finance and creates a prompt for GPT to analyze the data based on volume-price relationships and other VPA criteria.
-- **Report Generator**: Converts the GPT-generated analysis into a Markdown report and then converts it into HTML for easy copy-paste into Word or other document formats.
 
-## Installation Instructions
+### Core Workflows
+- **VSA Analysis Pipeline**: Complete Volume Spread Analysis with data export, cleaning, and visualization
+- **Volume Anomaly Detection**: Statistical analysis to identify unusual volume patterns
+- **AI-Powered Analysis**: Generate comprehensive analysis reports using OpenAI's GPT models
+- **Stock Screening**: Filter stocks by institutional ownership, volatility, and volume criteria
+- **Batch Processing**: Process multiple tickers through any workflow
+- **Daily Market Roundup**: Real-time price/volume movement tracking with Kabu
+
+### Analysis Tools
+- **Volume Spread Analysis (VSA)**: Detect high-probability trading signals based on volume-price relationships
+- **Statistical Anomaly Detection**: Z-score based volume anomaly identification
+- **Technical Data Export**: Multi-timeframe OHLCV data extraction from Yahoo Finance
+- **Data Cleaning & Preprocessing**: Automated CSV cleaning and formatting
+- **Interactive Visualizations**: Plot generation for signals and anomalies
+
+## Project Structure
+
+```
+yen/
+├── yen.py                     # Main workflow manager
+├── yen/                       # Core analysis scripts
+│   ├── data_exporter.py       # OHLCV data fetching from Yahoo Finance
+│   ├── clean_csv_data.py      # CSV data cleaning and preprocessing
+│   ├── vsa.py                 # Volume Spread Analysis engine
+│   ├── detect_volume_anomalies.py  # Statistical volume anomaly detection
+│   ├── report_generator.py    # AI-powered analysis report generation
+│   ├── stock_scanner.py       # Stock screening by fundamental criteria
+│   ├── prompt_generator.py    # VPA analysis prompt generation
+│   ├── prompt_generator_v2.py # Multi-ticker prompt generation
+│   └── txt_to_csv.py         # Data format conversion utility
+├── kabu/                      # Daily market roundup tools
+│   ├── kabu.py               # Daily price/volume movement tracker
+│   ├── kabu_visualizer.py    # PNG visualization generator
+│   └── kabu_visualizer_html.py # HTML report generator
+├── data_exports/             # Exported CSV data storage
+├── vsa_outputs/             # VSA analysis results
+└── requirements.txt         # Python dependencies
+```
+
+## Installation
 
 1. **Clone the Repository**
    ```bash
-   git clone https://github.com/HawtStrokes/yen.git
+   git clone https://www.github.com/YedTheEmo/yen.git
    cd yen
    ```
 
-2. **Create a Virtual Environment (Optional, but Recommended)**
-
-   If you prefer to work with a virtual environment:
+2. **Create Virtual Environment**
    ```bash
    python -m venv venv
-   source venv/bin/activate  # For Windows: venv\Scripts\activate
+   source venv/bin/activate  # Linux/Mac
+   # or
+   venv\Scripts\activate     # Windows
    ```
 
-3. **Install the Dependencies**
-
-   Make sure you have pip installed, and then run:
+3. **Install Dependencies**
    ```bash
    pip install -r requirements.txt
    ```
 
-4. **Create a config.json File**
-
-   Create a `config.json` file in the root directory of this repository with your OpenAI API key:
+4. **Configure OpenAI API (Optional)**
+   For AI-powered analysis, create `config.json`:
    ```json
    {
-       "openai_api_key": "<YOUR API KEY>"
+       "openai_api_key": "your-openai-api-key-here"
    }
    ```
-   Note: Replace `<YOUR API KEY>` with your actual OpenAI API key. This is required to interact with the OpenAI API.
 
-## Usage Instructions
+## Usage Examples
 
-Run the Script to Fetch Data and Generate Reports
-
-The script can be run with the following command:
+### VSA Analysis Pipeline
+Complete Volume Spread Analysis with visualization:
 ```bash
-python main.py <TICKER> <START_DATE> <END_DATE> --intervals <INTERVALS>
+python yen.py vsa-analysis AAPL 2024-01-01 2024-12-31 --plot --threshold 1.0
 ```
-- `<TICKER>`: The stock ticker symbol (e.g., AAPL).
-- `<START_DATE>`: The start date for the data (format: YYYY-MM-DD).
-- `<END_DATE>`: The end date for the data (format: YYYY-MM-DD).
-- `--intervals`: Optional. List of candlestick intervals. Default is `1h 1d 1wk`.
 
-Example:
+### Volume Anomaly Detection
+Detect unusual volume patterns:
 ```bash
-python main.py AAPL 2023-01-01 2023-12-31 --intervals 1h 1d 1wk
+python yen.py volume-anomalies TSLA 2024-01-01 2024-12-31 --threshold 2.0
 ```
 
-## Output
-
-The script will generate a report in HTML format and save it with the following naming convention:
-```php
-vpa_analysis_<TICKER>_<START_DATE>_<END_DATE>.html
+### AI-Powered Analysis Report
+Generate comprehensive AI analysis:
+```bash
+python yen.py ai-analysis NVDA 2024-01-01 2024-12-31 --intervals 1wk 1d 1h
 ```
-This file can be opened in any browser, and you can copy and paste the contents into a Word document.
 
-## Token Limit and Considerations
+### Complete Analysis Suite
+Run all analyses in sequence:
+```bash
+python yen.py full-analysis MSFT 2024-01-01 2024-12-31
+```
 
-The OpenAI models used have token limits, which may affect the amount of data you can process in one request.
-- **GPT-3.5 (4096 tokens)**: The model has a token limit of 4096 tokens (input + output). If the token limit is exceeded, the input will need to be shortened.
-- **GPT-4**: You can use GPT-4 models with token limits up to 32K tokens, but ensure you are using the correct model version and that your OpenAI API key supports this.
+### Stock Screening
+Filter stocks by criteria:
+```bash
+python yen.py stock-screening 10.0 0.3 1000000 --output-file filtered_stocks.txt
+```
 
-Important: This project uses the OpenAI API, so ensure that you have an active API key in your `config.json` file.
+### Batch Processing
+Process multiple tickers from file:
+```bash
+python yen.py batch-analysis tickers.txt 2024-01-01 2024-12-31 vsa --plot
+```
+
+### Daily Market Roundup (Kabu)
+Generate daily price/volume summary:
+```bash
+python kabu/kabu.py --tickers tickers.txt
+python kabu/kabu_visualizer_html.py --report daily_report.json --output daily_report.html
+```
+
+## 🔧 Individual Script Usage
+
+### Data Export
+```bash
+python yen/data_exporter.py AAPL 2024-01-01 2024-12-31 --intervals 1d 1h
+```
+
+### VSA Analysis
+```bash
+python yen/vsa.py -f data.csv -t 1.0 0.5 -p -d 5
+```
+
+### Volume Anomaly Detection
+```bash
+python yen/detect_volume_anomalies.py input.csv output.csv --threshold 2.0
+```
+
+### Stock Screening
+```bash
+python yen/stock_scanner.py 10.0 0.3 1000000 --ticker-file sp500.txt --resume
+```
+
+## Workflow Details
+
+### VSA Analysis Pipeline
+1. **Data Export**: Fetch OHLCV data from Yahoo Finance
+2. **Data Cleaning**: Remove headers and handle missing data
+3. **VSA Analysis**: Apply Volume Spread Analysis algorithms
+4. **Visualization**: Generate signal plots and charts
+
+### Volume Anomaly Detection
+1. **Data Export & Cleaning**: Prepare clean OHLCV dataset
+2. **Statistical Analysis**: Calculate volume z-scores
+3. **Anomaly Identification**: Flag volumes exceeding threshold
+4. **Report Generation**: Export anomaly summary to CSV
+
+### AI Analysis Workflow
+1. **Data Collection**: Multi-timeframe data aggregation
+2. **Prompt Generation**: Create structured analysis prompts
+3. **AI Processing**: Send to OpenAI API for analysis
+4. **Report Formatting**: Generate HTML/Markdown reports
+
+## Requirements
+
+- Python 3.7+
+- pandas
+- numpy
+- yfinance
+- matplotlib
+- requests
+- openai (for AI analysis)
+
+## Use Cases
+
+- **Day Trading**: VSA signal detection for intraday opportunities
+- **Swing Trading**: Multi-timeframe analysis for position entries
+- **Risk Management**: Volume anomaly alerts for unusual market activity
+- **Portfolio Screening**: Filter stocks by fundamental and technical criteria
+- **Market Research**: AI-powered analysis of market trends and patterns
+- **Daily Monitoring**: Automated daily market roundup and alerts
+
+## Important Notes
+
+- **API Limits**: OpenAI API usage incurs costs based on token consumption
+- **Data Sources**: Uses Yahoo Finance via yfinance library
+- **File Management**: Temporary files are automatically cleaned up
+- **Error Handling**: Graceful failure recovery with detailed error messages
+- **Resume Support**: Stock screening supports resume functionality for large datasets
+
+## Troubleshooting
+
+### Argument Order Issues
+Always place optional arguments after positional arguments:
+```bash
+# Correct
+python yen.py vsa-analysis AAPL 2024-01-01 2024-12-31 --intervals 1d
+
+# Incorrect
+python yen.py vsa-analysis --intervals 1d AAPL 2024-01-01 2024-12-31
+```
+
+### Missing Config File
+If `report_generator.py` fails, ensure `config.json` exists with your OpenAI API key.
+
+### Data Export Issues
+Check internet connectivity and verify ticker symbols are valid.
+
+---
+
+**YEN** - Your comprehensive toolkit for professional stock market analysis and trading signal generation.
