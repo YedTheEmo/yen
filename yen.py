@@ -315,6 +315,38 @@ class YenWorkflowManager:
             raise
         finally:
             self.cleanup()
+
+    # ================================================
+    # WORKFLOW 8: Company Description (from describe.py)
+    # ================================================
+    def describe_company(self, ticker=None, tickers=None, ticker_file=None, output=None):
+        """
+        Fetch and display company descriptions using core/describe.py
+        """
+        if ticker:
+            target = ticker
+        elif tickers:
+            target = ', '.join(tickers)
+        elif ticker_file:
+            target = f"[from file] {ticker_file}"
+        else:
+            target = "Unknown"
+
+        print(f"[INFO] Fetching company descriptions for: {target}")
+
+        args = []
+        if ticker:
+            args += ["--ticker", ticker]
+        elif tickers:
+            args += ["--tickers"] + tickers
+        elif ticker_file:
+            args += ["--ticker-file", ticker_file]
+
+        if output:
+            args += ["--output", output]
+
+        self.run_script("describe.py", args)
+
     # ============================
     # UTILITY: Data Conversion
     # ============================
@@ -347,6 +379,7 @@ Available Workflows:
   batch-analysis    Process multiple tickers through any workflow
   convert-data      Convert space-separated TXT to CSV
   kabu-analysis     Daily Stock Watchlist Roundup
+  describe-company  Provide Company Text Description
 
 Examples:
   python yen.py vsa-analysis AAPL 2024-01-01 2024-12-31 --plot
@@ -421,6 +454,16 @@ Examples:
     kabu_parser.add_argument('--png-output', dest='png_output', default='kabu_visualization.png', help='PNG output filename')
     kabu_parser.add_argument('--html-output', dest='html_output', default='kabu_report.html', help='HTML output filename')
 
+    # Workflow 8: Company Description
+    desc_parser = subparsers.add_parser(
+        'describe-company',
+        help='Fetch company descriptions from Yahoo Finance'
+    )
+    desc_group = desc_parser.add_mutually_exclusive_group(required=True)
+    desc_group.add_argument('--ticker', type=str, help='Single ticker symbol (e.g., AAPL)')
+    desc_group.add_argument('--tickers', nargs='+', help='List of ticker symbols (e.g., AAPL MSFT GOOGL)')
+    desc_group.add_argument('--ticker-file', type=str, help='Path to a file with ticker symbols, one per line')
+    desc_parser.add_argument('--output', type=str, help='Path to save output as plain text')
 
     # Data Conversion utility
     convert_parser = subparsers.add_parser('convert-data', help='Convert TXT to CSV')
@@ -483,6 +526,13 @@ Examples:
                 visualize_html=args.visualize_html,
                 png_output=args.png_output,
                 html_output=args.html_output
+            )
+        elif args.workflow == 'describe-company':
+            manager.describe_company(
+                ticker=args.ticker,
+                tickers=args.tickers,
+                ticker_file=args.ticker_file,
+                output=args.output
             )
         elif args.workflow == 'convert-data':
             manager.convert_data(args.input_file, args.output_file)
