@@ -57,7 +57,11 @@ def find_signals(data: pd.DataFrame, threshold: float = 1.0):
 
 
 def plot_around(data: pd.DataFrame, idx: int, above: bool = True,
-                threshold: float = 1.0, days_around: int = 1) -> None:
+                threshold: float = 1.0, days_around: int = 1, output_dir: str = "vsa_outputs") -> None:
+    """
+    Plot around signal and save figure in output_dir.
+    """
+    import os
     above_signals, below_signals = find_signals(data, threshold)
     signals = above_signals if above else below_signals
 
@@ -81,18 +85,16 @@ def plot_around(data: pd.DataFrame, idx: int, above: bool = True,
     plt.style.use('dark_background')
     fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(12, 8), sharex=True)
 
-    for i, (date, row) in enumerate(window_data.iterrows()):
+    for date, row in window_data.iterrows():
         color = 'green' if row['close'] >= row['open'] else 'red'
         alpha = 1.0 if date == signal_timestamp else 0.7
         ax1.plot([date, date], [row['low'], row['high']], color='white', alpha=alpha, linewidth=1)
         height = abs(row['close'] - row['open'])
         bottom = min(row['close'], row['open'])
+        linewidth = 2 if date == signal_timestamp else 1
         if date == signal_timestamp:
             color = 'orange'
             alpha = 1.0
-            linewidth = 2
-        else:
-            linewidth = 1
         ax1.bar(date, height, bottom=bottom, color=color, alpha=alpha,
                 width=pd.Timedelta(hours=12), linewidth=linewidth, edgecolor='white')
 
@@ -120,7 +122,9 @@ def plot_around(data: pd.DataFrame, idx: int, above: bool = True,
     ax3.grid(True, alpha=0.3)
 
     plt.tight_layout()
-    filename = f'vsa_outputs/vsa_signal_{signal_timestamp.strftime("%Y%m%d_%H%M%S")}_{"above" if above else "below"}_{threshold}.png'
+
+    os.makedirs(output_dir, exist_ok=True)
+    filename = os.path.join(output_dir, f'vsa_signal_{signal_timestamp.strftime("%Y%m%d_%H%M%S")}_{"above" if above else "below"}_{threshold}.png')
     plt.savefig(filename, dpi=300)
     plt.close()
 
@@ -149,6 +153,9 @@ def main():
     parser.add_argument("-p", "--plot", action="store_true", help="Enable plotting of signals")
     parser.add_argument("-d", "--days", type=int, default=5, help="Days around signal to plot (default: 5)")
     parser.add_argument("-n", "--norm_lookback", type=int, default=20, help="Normalization lookback (default: 20)")
+    parser.add_argument("-o", "--output-dir", default="vsa_outputs",
+                    help="Directory to save output plots (default: vsa_outputs)")
+
 
     args = parser.parse_args()
 
@@ -174,9 +181,9 @@ def main():
             if args.plot:
                 above_signals, below_signals = find_signals(df, threshold)
                 for i in range(len(below_signals)):
-                    plot_around(df, idx=i, above=False, threshold=threshold, days_around=args.days)
+                    plot_around(df, idx=i, above=False, threshold=threshold, days_around=args.days, output_dir=args.output_dir)
                 for i in range(len(above_signals)):
-                    plot_around(df, idx=i, above=True, threshold=threshold, days_around=args.days)
+                    plot_around(df, idx=i, above=True, threshold=threshold, days_around=args.days, output_dir=args.output_dir)
 
         print("\nSample VSA deviation values (last 10 non-NaN):")
         for dt, val in df['dev'].dropna().tail(10).items():
@@ -192,4 +199,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 

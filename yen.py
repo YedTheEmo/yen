@@ -56,17 +56,28 @@ class YenWorkflowManager:
     # ================================
     # WORKFLOW 1: VSA Analysis Pipeline
     # ================================
-    def vsa_analysis(self, ticker, start_date, end_date, intervals=None, threshold=1.0, plot=False, days=5):
+    def vsa_analysis(self, ticker, start_date, end_date, intervals=None,
+                 threshold=1.0, plot=False, days=5, output_dir=None):
         """
         Complete VSA Analysis Pipeline:
         1. Export stock data
         2. Clean the CSV
         3. Run VSA analysis with visualization
+        
+        All outputs are saved inside output_dir.
         """
+        import os
+        
         print(f"🔄 Starting VSA Analysis for {ticker}")
         
         if intervals is None:
             intervals = ["1d"]
+        
+        if output_dir is None:
+            # Default output dir if none provided
+            output_dir = os.path.join("output", ticker)
+        
+        os.makedirs(output_dir, exist_ok=True)
         
         try:
             # Step 1: Export data
@@ -82,7 +93,7 @@ class YenWorkflowManager:
                 # Step 2: Find and clean CSV
                 print("🧹 Step 2: Cleaning CSV data...")
                 raw_csv = self.find_exported_csv(ticker, start_date, end_date, interval)
-                cleaned_csv = f"cleaned_{ticker}_{interval}.csv"
+                cleaned_csv = os.path.join(output_dir, f"cleaned_{ticker}_{interval}.csv")
                 self.temp_files.append(cleaned_csv)
                 
                 self.run_script("clean_csv_data.py", [raw_csv, cleaned_csv])
@@ -93,6 +104,10 @@ class YenWorkflowManager:
                 if plot:
                     vsa_args.extend(["-p", "-d", str(days)])
                 
+                # Pass output_dir to vsa.py if it supports it; else handle plotting output differently
+                # Assuming vsa.py can accept an output directory argument:
+                vsa_args.extend(["--output-dir", output_dir])
+                
                 self.run_script("vsa.py", vsa_args)
             
             print(f"✅ VSA Analysis complete for {ticker}")
@@ -102,6 +117,8 @@ class YenWorkflowManager:
             raise
         finally:
             self.cleanup()
+
+
 
     # ======================================
     # WORKFLOW 2: Volume Anomaly Detection
@@ -270,51 +287,72 @@ class YenWorkflowManager:
     # =============================
     # WORKFLOW 7: KABU Snapshot Diff
     # =============================
-    def kabu_analysis(self,
-                       ticker_file=None,
-                       compare=None,
-                       snapshot_only=False,
-                       output_dir=None,
-                       snapshot_dir=None,
-                       visualize_png=False,
-                       visualize_html=False,
-                       png_output="kabu_visualization.png",
-                       html_output="kabu_report.html"):
+   
+    def batch_analysis(self, ticker_file, start_date, end_date, workflow="vsa", **kwargs):
         """
-        Run KABU snapshot comparison and optional visualization.
+        Batch Analysis Workflow:
+        Process multiple tickers from a file through any workflow,
+        saving output files per ticker in isolated folders.
         """
-        print("🔄 Starting KABU snapshot analysis...")
-        args = []
-        if ticker_file:
-            args.extend(["--tickers", ticker_file])
-        if compare:
-            args.extend(["--compare", compare])
-        if snapshot_only:
-            args.append("--snapshot-only")
-        out_dir = output_dir or snapshot_dir or "kabu_snapshots"
-        args.extend(["--output-dir", out_dir])
-        # Run KABU
+        print(f"🔄 Starting Batch {workflow.upper()} Analysis...")
+        
         try:
-            self.run_script("kabu.py", args)
-            print("✅ KABU execution complete")
-            if not snapshot_only:
-                report_path = self.find_latest_report(out_dir)
-                if report_path:
-                    print(f"🔍 Found report: {report_path}")
-                    if visualize_png:
-                        print("📈 Generating PNG visualization...")
-                        self.run_script("kabu_visualizer.py", ["--report", report_path, "--output", png_output])
-                    if visualize_html:
-                        print("🌐 Generating HTML report...")
-                        self.run_script("kabu_visualizer_html.py", ["--report", report_path, "--output", html_output])
-                else:
-                    print("⚠️  No report found for visualization.")
-            return
+            # Read tickers from file
+            with open(ticker_file, 'r') as f:
+                tickers = [line.strip() for line in f if line.strip()]
+            
+            print(f"📋 Processing {len(tickers)} tickers...")
+            
+            # Optionally create a batch run folder with timestamp to isolate batch runs
+            from datetime import datetime
+            batch_run_id = datetime.now().strftime("%Y%m%d_%H%M%S")
+            base_output_dir = os.path.join("output", f"batch_{batch_run_id}")
+            os.makedirs(base_output_dir, exist_ok=True)
+            
+            for i, ticker in enumerate(tickers, 1):
+                print(f"\n🔄 [{i}/{len(tickers)}] Processing {ticker}...")
+                
+                # Create ticker-specific output folder inside batch folder
+                ticker_output_dir = os.path.join(base_output_dir, ticker)
+                os.makedirs(ticker_output_dir, exist_ok=True)
+                
+                try:
+                    if workflow == "vsa":
+                        self.vsa_analysis(
+                            ticker, start_date, end_date,
+                            output_dir=ticker_output_dir,
+                            **kwargs
+                        )
+                    elif workflow == "anomalies":
+                        self.volume_anomalies(
+                            ticker, start_date, end_date,
+                            output_dir=ticker_output_dir,
+                            **kwargs
+                        )
+                    elif workflow == "ai":
+                        self.ai_analysis(
+                            ticker, start_date, end_date,
+                            output_dir=ticker_output_dir,
+                            **kwargs
+                        )
+                    elif workflow == "full":
+                        self.full_analysis(
+                            ticker, start_date, end_date,
+                            output_dir=ticker_output_dir,
+                            **kwargs
+                        )
+                    else:
+                        raise ValueError(f"Unknown workflow: {workflow}")
+                        
+                except Exception as e:
+                    print(f"⚠️  Failed to process {ticker}: {e}")
+                    continue
+            
+            print("✅ Batch Analysis complete")
+            
         except Exception as e:
-            print(f"❌ KABU analysis failed: {e}")
+            print(f"❌ Batch Analysis failed: {e}")
             raise
-        finally:
-            self.cleanup()
 
     # ================================================
     # WORKFLOW 8: Company Description (from describe.py)
@@ -547,3 +585,4 @@ Examples:
 
 if __name__ == "__main__":
     main()
+
