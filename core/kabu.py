@@ -112,8 +112,8 @@ def save_snapshot(snapshot_data, output_dir=SNAPSHOT_DIR):
     filepath = os.path.join(output_dir, filename)
     
     with open(filepath, 'w') as f:
-        json.dump(snapshot_data, f, indent=2)
-    
+        json.dump(snapshot_data, f, indent=2, default=str)
+
     print(f"💾 Snapshot saved: {filepath}")
     return filepath
 
@@ -228,8 +228,8 @@ def save_report(report, output_dir=SNAPSHOT_DIR):
     filepath = os.path.join(output_dir, filename)
     
     with open(filepath, 'w') as f:
-        json.dump(report, f, indent=2)
-    
+        json.dump(report, f, indent=2, default=str)
+
     print(f"📋 Report saved: {filepath}")
     return filepath
 
@@ -381,3 +381,4 @@ Examples:
     except Exception as e:
         print(f"\n💥 Error: {e}")
         exit(1)
+
