@@ -247,50 +247,6 @@ class YenWorkflowManager:
     def batch_analysis(self, ticker_file, start_date, end_date, workflow="vsa", **kwargs):
         """
         Batch Analysis Workflow:
-        Process multiple tickers from a file through any workflow
-        """
-        print(f"🔄 Starting Batch {workflow.upper()} Analysis...")
-        
-        try:
-            # Read tickers from file
-            with open(ticker_file, 'r') as f:
-                tickers = [line.strip() for line in f if line.strip()]
-            
-            print(f"📋 Processing {len(tickers)} tickers...")
-            
-            for i, ticker in enumerate(tickers, 1):
-                print(f"\n🔄 [{i}/{len(tickers)}] Processing {ticker}...")
-                
-                try:
-                    if workflow == "vsa":
-                        self.vsa_analysis(ticker, start_date, end_date, **kwargs)
-                    elif workflow == "anomalies":
-                        self.volume_anomalies(ticker, start_date, end_date, **kwargs)
-                    elif workflow == "ai":
-                        self.ai_analysis(ticker, start_date, end_date, **kwargs)
-                    elif workflow == "full":
-                        self.full_analysis(ticker, start_date, end_date, **kwargs)
-                    else:
-                        raise ValueError(f"Unknown workflow: {workflow}")
-                        
-                except Exception as e:
-                    print(f"⚠️  Failed to process {ticker}: {e}")
-                    continue
-            
-            print("✅ Batch Analysis complete")
-            
-        except Exception as e:
-            print(f"❌ Batch Analysis failed: {e}")
-            raise
-
-
-    # =============================
-    # WORKFLOW 7: KABU Snapshot Diff
-    # =============================
-   
-    def batch_analysis(self, ticker_file, start_date, end_date, workflow="vsa", **kwargs):
-        """
-        Batch Analysis Workflow:
         Process multiple tickers from a file through any workflow,
         saving output files per ticker in isolated folders.
         """
@@ -353,6 +309,55 @@ class YenWorkflowManager:
         except Exception as e:
             print(f"❌ Batch Analysis failed: {e}")
             raise
+
+    # =============================
+    # WORKFLOW 7: KABU Snapshot Diff
+    # =============================
+    def kabu_analysis(self,
+                       ticker_file=None,
+                       compare=None,
+                       snapshot_only=False,
+                       output_dir=None,
+                       snapshot_dir=None,
+                       visualize_png=False,
+                       visualize_html=False,
+                       png_output="kabu_visualization.png",
+                       html_output="kabu_report.html"):
+        """
+        Run KABU snapshot comparison and optional visualization.
+        """
+        print("🔄 Starting KABU snapshot analysis...")
+        args = []
+        if ticker_file:
+            args.extend(["--tickers", ticker_file])
+        if compare:
+            args.extend(["--compare", compare])
+        if snapshot_only:
+            args.append("--snapshot-only")
+        out_dir = output_dir or snapshot_dir or "kabu_snapshots"
+        args.extend(["--output-dir", out_dir])
+        # Run KABU
+        try:
+            self.run_script("kabu.py", args)
+            print("✅ KABU execution complete")
+            if not snapshot_only:
+                report_path = self.find_latest_report(out_dir)
+                if report_path:
+                    print(f"🔍 Found report: {report_path}")
+                    if visualize_png:
+                        print("📈 Generating PNG visualization...")
+                        self.run_script("kabu_visualizer.py", ["--report", report_path, "--output", png_output])
+                    if visualize_html:
+                        print("🌐 Generating HTML report...")
+                        self.run_script("kabu_visualizer_html.py", ["--report", report_path, "--output", html_output])
+                else:
+                    print("⚠️  No report found for visualization.")
+            return
+        except Exception as e:
+            print(f"❌ KABU analysis failed: {e}")
+            raise
+        finally:
+            self.cleanup()
 
     # ================================================
     # WORKFLOW 8: Company Description (from describe.py)
